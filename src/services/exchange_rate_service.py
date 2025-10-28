@@ -136,8 +136,10 @@ class ExchangeRateService(BaseDataService):
         """
         latest_rates = []
 
-        for from_curr, to_curr in self.CURRENCY_PAIRS.keys():
-            latest = self.collection.find_one({"from_currency": from_curr, "to_currency": to_curr}, sort=[("date", -1)])
+        for from_curr, to_curr in self.CURRENCY_PAIRS:
+            latest = self.collection.find_one(
+                {"from_currency": from_curr, "to_currency": to_curr}, sort=[("date", -1)]
+            )
             if latest:
                 latest_rates.append(latest)
 

@@ -1,4 +1,5 @@
 """Integration tests for API endpoints."""
+
 import pytest
 
 
@@ -83,4 +84,3 @@ class TestInflationEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "success"
-

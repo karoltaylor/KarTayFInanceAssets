@@ -133,7 +133,7 @@ class InflationService(BaseDataService):
         Returns:
             Latest inflation rate record or None
         """
-        return self.collection.find_one({"currency": currency}, sort=[("date", -1)])
+        return self.collection.find_one({"currency": currency}, {"_id": 0}, sort=[("date", -1)])
 
     def get_rates_by_currency(
         self, currency: str, start_date: datetime = None, end_date: datetime = None
@@ -158,7 +158,7 @@ class InflationService(BaseDataService):
             if end_date:
                 query["date"]["$lte"] = end_date
 
-        return list(self.collection.find(query).sort("date", 1))
+        return list(self.collection.find(query, {"_id": 0}).sort("date", 1))
 
     def seed_sample_data(self):
         """

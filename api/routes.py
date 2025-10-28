@@ -67,10 +67,13 @@ async def get_exchange_rate_history(
 
     if start_date or end_date:
         query["date"] = {}
-        if start_date:
-            query["date"]["$gte"] = datetime.fromisoformat(start_date)
-        if end_date:
-            query["date"]["$lte"] = datetime.fromisoformat(end_date)
+        try:
+            if start_date:
+                query["date"]["$gte"] = datetime.fromisoformat(start_date)
+            if end_date:
+                query["date"]["$lte"] = datetime.fromisoformat(end_date)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=f"Invalid date format: {str(e)}") from e
 
     rates = list(service.collection.find(query).sort("date", -1).limit(limit))
     return {"data": rates, "count": len(rates)}
@@ -110,10 +113,13 @@ async def get_gold_price_history(
     query = {}
     if start_date or end_date:
         query["date"] = {}
-        if start_date:
-            query["date"]["$gte"] = datetime.fromisoformat(start_date)
-        if end_date:
-            query["date"]["$lte"] = datetime.fromisoformat(end_date)
+        try:
+            if start_date:
+                query["date"]["$gte"] = datetime.fromisoformat(start_date)
+            if end_date:
+                query["date"]["$lte"] = datetime.fromisoformat(end_date)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=f"Invalid date format: {str(e)}") from e
 
     prices = list(service.collection.find(query).sort("date", -1).limit(limit))
     return {"data": prices, "count": len(prices)}
@@ -154,10 +160,13 @@ async def get_stock_price_history(
     query = {"symbol": symbol.upper()}
     if start_date or end_date:
         query["date"] = {}
-        if start_date:
-            query["date"]["$gte"] = datetime.fromisoformat(start_date)
-        if end_date:
-            query["date"]["$lte"] = datetime.fromisoformat(end_date)
+        try:
+            if start_date:
+                query["date"]["$gte"] = datetime.fromisoformat(start_date)
+            if end_date:
+                query["date"]["$lte"] = datetime.fromisoformat(end_date)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=f"Invalid date format: {str(e)}") from e
 
     prices = list(service.collection.find(query).sort("date", -1).limit(limit))
     return {"data": prices, "count": len(prices)}
@@ -194,8 +203,11 @@ async def get_inflation_history(
     """Get inflation rate history for a currency."""
     service = InflationService(db)
 
-    start = datetime.fromisoformat(start_date) if start_date else None
-    end = datetime.fromisoformat(end_date) if end_date else None
+    try:
+        start = datetime.fromisoformat(start_date) if start_date else None
+        end = datetime.fromisoformat(end_date) if end_date else None
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid date format: {str(e)}") from e
 
     rates = service.get_rates_by_currency(currency.upper(), start, end)
     return {"data": rates, "count": len(rates)}

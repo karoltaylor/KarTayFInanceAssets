@@ -54,9 +54,9 @@ class TestFredClient:
 
         client = FredClient()
         with patch.object(client, "api_key", "test_key"):
-            data = client.fetch_series_daily("DEXUSEU", datetime(2024, 10, 1), datetime(2024, 10, 21))
-
-            assert data == []
+            # The client retries 4 times and then raises the exception
+            with pytest.raises(Exception, match="HTTP error"):
+                client.fetch_series_daily("DEXUSEU", datetime(2024, 10, 1), datetime(2024, 10, 21))
 
 
 @pytest.mark.unit

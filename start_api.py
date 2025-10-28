@@ -1,13 +1,15 @@
 """Main application entry point for Finance Assets API."""
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-from config import settings
-from config.logging_config import setup_logging, get_logger
-from src.database import get_database, close_database_connection
-from src.scheduler import DataScheduler
+
 from api.routes import router
+from config import settings
+from config.logging_config import get_logger, setup_logging
+from src.database import close_database_connection, get_database
+from src.scheduler import DataScheduler
 
 
 # Setup logging

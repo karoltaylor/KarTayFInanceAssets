@@ -1,6 +1,7 @@
 """Application settings and configuration."""
 from typing import List
-from pydantic import field_validator, Field
+
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -44,13 +45,13 @@ class Settings(BaseSettings):
     # Data Configuration
     historical_years: int = 3
 
-    @field_validator('allowed_origins')
+    @field_validator("allowed_origins", mode="after")
     @classmethod
     def validate_origins(cls, v: str) -> str:
         """Validate that allowed_origins is not empty or wildcard in production."""
         if not v or v.strip() == "*":
             raise ValueError(
-                "allowed_origins must be explicitly set and cannot be '*' in production"
+                "allowed_origins must be explicitly set and cannot be '*'"
             )
         return v
 

@@ -1,7 +1,9 @@
 """MongoDB database connection management."""
 from typing import Optional
+
 from pymongo import MongoClient
 from pymongo.database import Database
+
 from config import settings
 from config.logging_config import get_logger
 
@@ -38,7 +40,7 @@ def get_database() -> Database:
             _database = _client[settings.mongodb_database]
 
             # Test connection
-            _client.admin.command('ping')
+            _client.admin.command("ping")
             logger.info(
                 f"Successfully connected to database: {settings.mongodb_database} "
                 f"(pool: {settings.mongodb_min_pool_size}-{settings.mongodb_max_pool_size})"

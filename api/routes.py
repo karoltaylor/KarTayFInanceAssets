@@ -1,15 +1,17 @@
 """API routes for the Finance Assets API."""
 from datetime import datetime
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query, Depends
-from config.logging_config import get_logger
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pymongo.database import Database
+
+from config.logging_config import get_logger
 from src.database import get_database
 from src.services import (
     ExchangeRateService,
-    InflationService,
     GoldPriceService,
-    StockPriceService
+    InflationService,
+    StockPriceService,
 )
 
 router = APIRouter()
@@ -37,14 +39,16 @@ async def health_check(db: Database = Depends(get_db)):
     """Health check endpoint."""
     try:
         # Test database connection
-        db.client.admin.command('ping')
+        db.client.admin.command("ping")
         return {
             "status": "healthy",
             "database": "connected",
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        raise HTTPException(status_code=503, detail=f"Database connection failed: {str(e)}")
+        raise HTTPException(
+            status_code=503, detail=f"Database connection failed: {str(e)}"
+        ) from e
 
 
 # Exchange Rate Endpoints
@@ -245,5 +249,7 @@ async def update_all_data(db: Database = Depends(get_db)):
         return {"status": "success", "message": "Data update triggered"}
     except Exception as e:
         logger.exception(f"Manual data update failed: {str(e)}")
-        raise HTTPException(status_code=500, detail="Data update failed; see logs for details")
+        raise HTTPException(
+            status_code=500, detail="Data update failed; see logs for details"
+        ) from e
 

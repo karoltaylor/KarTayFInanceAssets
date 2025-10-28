@@ -1,7 +1,7 @@
 """Comprehensive unit tests for services to increase coverage."""
 
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -108,17 +108,16 @@ class TestExchangeRateServiceComprehensive:
 class TestGoldPriceServiceComprehensive:
     """Comprehensive tests for GoldPriceService."""
 
-    @patch("src.services.gold_price_service.yfinance.Ticker")
-    def test_fetch_gold_prices(self, mock_ticker_class, mock_db):
-        """Test fetching gold prices."""
-        mock_ticker = Mock()
-        mock_history = Mock()
-        mock_history.empty = False
-        mock_history.iterrows.return_value = [(datetime(2024, 10, 20), {"Close": 1975.50})]
-        mock_ticker.history.return_value = mock_history
-        mock_ticker_class.return_value = mock_ticker
+    @patch("src.services.gold_price_service.FredClient")
+    def test_fetch_gold_prices(self, mock_fred_class, mock_db):
+        """Test fetching gold prices via FRED."""
+        mock_fred = Mock()
+        mock_fred.fetch_series_daily.return_value = [{"date": datetime(2024, 10, 20), "close": 1975.50}]
+        mock_fred_class.return_value = mock_fred
 
         service = GoldPriceService(mock_db)
+        service.client = mock_fred
+
         records = service.fetch_gold_prices(datetime(2024, 10, 1), datetime(2024, 10, 21))
 
         assert len(records) > 0
@@ -135,22 +134,25 @@ class TestGoldPriceServiceComprehensive:
 class TestStockPriceServiceComprehensive:
     """Comprehensive tests for StockPriceService."""
 
-    @patch("src.services.stock_price_service.yfinance.Ticker")
-    def test_fetch_stock_prices(self, mock_ticker_class, mock_db):
-        """Test fetching stock prices."""
-        mock_ticker = Mock()
-        mock_history = Mock()
-        mock_history.empty = False
-        mock_history.iterrows.return_value = [
-            (
-                datetime(2024, 10, 20),
-                {"Open": 4500.0, "High": 4520.0, "Low": 4490.0, "Close": 4510.0, "Volume": 1000000.0},
-            )
+    @patch("src.services.stock_price_service.AlphaVantageClient")
+    def test_fetch_stock_prices(self, mock_av_class, mock_db):
+        """Test fetching stock prices via AlphaVantage."""
+        mock_av = Mock()
+        mock_av.fetch_equity_daily.return_value = [
+            {
+                "date": datetime(2024, 10, 20),
+                "open": 4500.0,
+                "high": 4520.0,
+                "low": 4490.0,
+                "close": 4510.0,
+                "volume": 1000000.0,
+            }
         ]
-        mock_ticker.history.return_value = mock_history
-        mock_ticker_class.return_value = mock_ticker
+        mock_av_class.return_value = mock_av
 
         service = StockPriceService(mock_db)
+        service.client = mock_av
+
         records = service.fetch_stock_prices("^GSPC", datetime(2024, 10, 1), datetime(2024, 10, 21))
 
         assert len(records) > 0
@@ -195,7 +197,7 @@ class TestInflationServiceComprehensive:
     def test_update_inflation_from_world_bank(self, mock_wb_class, mock_db):
         """Test update_inflation_from_world_bank."""
         mock_wb = Mock()
-        mock_wb.fetch_inflation_data.return_value = [{"date": datetime(2024, 1, 1), "value": 3.2}]
+        mock_wb.fetch_inflation_cpi_annual.return_value = [{"year": 2024, "value": 3.2}]
         mock_wb_class.return_value = mock_wb
 
         service = InflationService(mock_db)

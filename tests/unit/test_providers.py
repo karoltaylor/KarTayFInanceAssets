@@ -46,9 +46,11 @@ class TestFredClient:
         assert data == []
 
     @patch("src.providers.fred.requests.get")
-    def test_fetch_series_daily_error(self, mock_get):
+    def test_fetch_series_daily_http_error(self, mock_get):
         """Test fetch with HTTP error."""
-        mock_get.side_effect = Exception("Network error")
+        mock_response = Mock()
+        mock_response.raise_for_status.side_effect = Exception("HTTP error")
+        mock_get.return_value = mock_response
 
         client = FredClient()
         with patch.object(client, "api_key", "test_key"):
@@ -65,7 +67,7 @@ class TestNbpClient:
         """Test NbpClient initialization."""
         client = NbpClient()
         assert client is not None
-        assert client.base_url == "https://api.nbp.pl/api/exchangerates/rates"
+        assert client.BASE_URL == "https://api.nbp.pl/api"
 
     @patch("src.providers.nbp.requests.get")
     def test_fetch_pln_rates_success(self, mock_get):
@@ -102,8 +104,8 @@ class TestAlphaVantageClient:
         assert client is not None
 
     @patch("src.providers.alpha_vantage.requests.get")
-    def test_fetch_daily_success(self, mock_get):
-        """Test successful fetch from Alpha Vantage."""
+    def test_fetch_equity_daily_success(self, mock_get):
+        """Test successful fetch equity data from Alpha Vantage."""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
@@ -121,32 +123,31 @@ class TestAlphaVantageClient:
 
         client = AlphaVantageClient()
         with patch.object(client, "api_key", "test_key"):
-            data = client.fetch_daily("GC=F")
+            data = client.fetch_equity_daily("SPY")
 
             assert len(data) > 0
 
     @patch("src.providers.alpha_vantage.requests.get")
-    def test_fetch_daily_no_api_key(self, mock_get):
+    def test_fetch_equity_daily_no_api_key(self, mock_get):
         """Test fetch without API key."""
         client = AlphaVantageClient()
         client.api_key = ""
 
-        data = client.fetch_daily("GC=F")
+        data = client.fetch_equity_daily("SPY")
         assert data == []
 
     @patch("src.providers.alpha_vantage.requests.get")
-    def test_fetch_intraday_success(self, mock_get):
-        """Test successful intraday fetch."""
+    def test_fetch_fx_daily_success(self, mock_get):
+        """Test successful FX fetch."""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            "Time Series (5min)": {
-                "2024-10-20 16:00:00": {
-                    "1. open": "100.0",
-                    "2. high": "101.0",
-                    "3. low": "99.5",
-                    "4. close": "100.5",
-                    "5. volume": "10000",
+            "Time Series FX (Daily)": {
+                "2024-10-20": {
+                    "1. open": "0.92",
+                    "2. high": "0.93",
+                    "3. low": "0.91",
+                    "4. close": "0.92",
                 }
             }
         }
@@ -154,7 +155,7 @@ class TestAlphaVantageClient:
 
         client = AlphaVantageClient()
         with patch.object(client, "api_key", "test_key"):
-            data = client.fetch_intraday("GC=F")
+            data = client.fetch_fx_daily("USD", "EUR")
 
             assert len(data) > 0
 
@@ -167,10 +168,10 @@ class TestWorldBankClient:
         """Test WorldBankClient initialization."""
         client = WorldBankClient()
         assert client is not None
-        assert client.base_url == "https://api.worldbank.org/v2/country"
+        assert client.BASE_URL == "https://api.worldbank.org/v2"
 
     @patch("src.providers.world_bank.requests.get")
-    def test_fetch_inflation_data_success(self, mock_get):
+    def test_fetch_inflation_cpi_annual_success(self, mock_get):
         """Test successful fetch from World Bank."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -181,23 +182,23 @@ class TestWorldBankClient:
         mock_get.return_value = mock_response
 
         client = WorldBankClient()
-        data = client.fetch_inflation_data("USA", 2020, 2024)
+        data = client.fetch_inflation_cpi_annual("USA")
 
         assert len(data) == 1
         assert data[0]["value"] == 3.2
 
     @patch("src.providers.world_bank.requests.get")
-    def test_fetch_inflation_data_error(self, mock_get):
+    def test_fetch_inflation_cpi_annual_error(self, mock_get):
         """Test fetch with error."""
         mock_get.side_effect = Exception("Network error")
 
         client = WorldBankClient()
-        data = client.fetch_inflation_data("USA", 2020, 2024)
+        data = client.fetch_inflation_cpi_annual("USA")
 
         assert data == []
 
     @patch("src.providers.world_bank.requests.get")
-    def test_fetch_inflation_data_invalid_response(self, mock_get):
+    def test_fetch_inflation_cpi_annual_invalid_response(self, mock_get):
         """Test fetch with invalid response."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -205,6 +206,6 @@ class TestWorldBankClient:
         mock_get.return_value = mock_response
 
         client = WorldBankClient()
-        data = client.fetch_inflation_data("USA", 2020, 2024)
+        data = client.fetch_inflation_cpi_annual("USA")
 
         assert data == []

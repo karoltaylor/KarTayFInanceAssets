@@ -1,4 +1,5 @@
 """MongoDB database connection management."""
+
 from typing import Optional
 
 from pymongo import MongoClient
@@ -35,7 +36,7 @@ def get_database() -> Database:
                 serverSelectionTimeoutMS=5000,
                 connectTimeoutMS=10000,
                 retryWrites=True,
-                retryReads=True
+                retryReads=True,
             )
             _database = _client[settings.mongodb_database]
 
@@ -56,10 +57,9 @@ def get_database() -> Database:
 def close_database_connection():
     """Close MongoDB database connection."""
     global _client, _database
-    
+
     if _client:
         logger.info("Closing MongoDB connection")
         _client.close()
         _client = None
         _database = None
-

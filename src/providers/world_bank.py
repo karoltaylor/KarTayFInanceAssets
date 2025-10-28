@@ -1,9 +1,12 @@
 """World Bank API provider for inflation data."""
+
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Dict
+from typing import Dict, List
+
 import requests
+
 from config.logging_config import get_logger
 
 
@@ -47,5 +50,3 @@ class WorldBankClient:
         except Exception as e:
             self.logger.error(f"WorldBank fetch failed for {country_code}: {str(e)}")
             return []
-
-

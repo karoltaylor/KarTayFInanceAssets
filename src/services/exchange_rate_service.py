@@ -1,11 +1,15 @@
 """Service for fetching and storing exchange rate data."""
+
 from datetime import datetime
 from typing import List
+
 from pymongo.database import Database
-from .base_service import BaseDataService
+
 from src.database.models import ExchangeRate
 from src.providers.fred import FredClient
 from src.providers.nbp import NbpClient
+
+from .base_service import BaseDataService
 
 
 class ExchangeRateService(BaseDataService):
@@ -23,22 +27,14 @@ class ExchangeRateService(BaseDataService):
         super().__init__(db, "exchange_rates")
         self.fred = FredClient()
         self.nbp = NbpClient()
-        self.create_indexes([
-            [("date", 1), ("from_currency", 1), ("to_currency", 1)]
-        ])
+        self.create_indexes([[("date", 1), ("from_currency", 1), ("to_currency", 1)]])
 
     def fetch_exchange_rate(
-        self,
-        from_currency: str,
-        to_currency: str,
-        start_date: datetime,
-        end_date: datetime
+        self, from_currency: str, to_currency: str, start_date: datetime, end_date: datetime
     ) -> List[dict]:
         """Fetch exchange rate data using FRED (USD/EUR) or NBP (PLN pairs)."""
         try:
-            self.logger.info(
-                f"Fetching {from_currency}/{to_currency} from {start_date.date()} to {end_date.date()}"
-            )
+            self.logger.info(f"Fetching {from_currency}/{to_currency} from {start_date.date()} to {end_date.date()}")
 
             records: List[dict] = []
 
@@ -59,11 +55,7 @@ class ExchangeRateService(BaseDataService):
                     else:
                         rate = mid  # USD/EUR -> PLN
                     rec = ExchangeRate(
-                        date=ts,
-                        from_currency=from_currency,
-                        to_currency=to_currency,
-                        rate=float(rate),
-                        source="nbp"
+                        date=ts, from_currency=from_currency, to_currency=to_currency, rate=float(rate), source="nbp"
                     )
                     records.append(rec.model_dump())
                 self.logger.info(f"Fetched {len(records)} records for {from_currency}/{to_currency} via NBP")
@@ -79,7 +71,7 @@ class ExchangeRateService(BaseDataService):
                         from_currency="USD",
                         to_currency="EUR",
                         rate=float(item["close"]),
-                        source="fred"
+                        source="fred",
                     )
                     records.append(rec.model_dump())
                 self.logger.info(f"Fetched {len(records)} records for USD/EUR via FRED")
@@ -91,11 +83,7 @@ class ExchangeRateService(BaseDataService):
                     if val and val != 0:
                         rate = 1.0 / float(val)
                         rec = ExchangeRate(
-                            date=item["date"],
-                            from_currency="EUR",
-                            to_currency="USD",
-                            rate=rate,
-                            source="fred"
+                            date=item["date"], from_currency="EUR", to_currency="USD", rate=rate, source="fred"
                         )
                         records.append(rec.model_dump())
                 self.logger.info(f"Fetched {len(records)} records for EUR/USD via FRED (inverted DEXUSEU)")
@@ -111,19 +99,16 @@ class ExchangeRateService(BaseDataService):
     def update_all_pairs(self) -> dict:
         """
         Update all currency pairs with latest data.
-        
+
         Returns:
             Dictionary with update statistics
         """
         stats = {"total_inserted": 0, "pairs_updated": 0}
         end_date = datetime.now()
 
-        for (from_curr, to_curr) in self.CURRENCY_PAIRS:
+        for from_curr, to_curr in self.CURRENCY_PAIRS:
             # Get start date for this specific pair
-            start_date = self.get_start_date({
-                "from_currency": from_curr,
-                "to_currency": to_curr
-            })
+            start_date = self.get_start_date({"from_currency": from_curr, "to_currency": to_curr})
 
             if start_date >= end_date:
                 self.logger.info(f"{from_curr}/{to_curr} is up to date")
@@ -131,7 +116,7 @@ class ExchangeRateService(BaseDataService):
 
             # Fetch and insert data
             records = self.fetch_exchange_rate(from_curr, to_curr, start_date, end_date)
-            
+
             if records:
                 try:
                     inserted = self.bulk_insert(records)
@@ -145,19 +130,15 @@ class ExchangeRateService(BaseDataService):
     def get_latest_rates(self) -> List[dict]:
         """
         Get the latest exchange rates for all pairs.
-        
+
         Returns:
             List of latest exchange rates
         """
         latest_rates = []
-        
-        for (from_curr, to_curr) in self.CURRENCY_PAIRS.keys():
-            latest = self.collection.find_one(
-                {"from_currency": from_curr, "to_currency": to_curr},
-                sort=[("date", -1)]
-            )
+
+        for from_curr, to_curr in self.CURRENCY_PAIRS.keys():
+            latest = self.collection.find_one({"from_currency": from_curr, "to_currency": to_curr}, sort=[("date", -1)])
             if latest:
                 latest_rates.append(latest)
-        
-        return latest_rates
 
+        return latest_rates

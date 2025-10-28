@@ -1,10 +1,13 @@
 """Alpha Vantage provider client."""
+
 from __future__ import annotations
 
-from datetime import datetime
-from typing import List, Dict
 import time
+from datetime import datetime
+from typing import Dict, List
+
 import requests
+
 from config import settings
 from config.logging_config import get_logger
 
@@ -65,13 +68,15 @@ class AlphaVantageClient:
             return []
         series = []
         for date_str, values in data[series_key].items():
-            series.append({
-                "date": datetime.strptime(date_str, "%Y-%m-%d"),
-                "open": float(values.get("1. open", 0.0)),
-                "high": float(values.get("2. high", 0.0)),
-                "low": float(values.get("3. low", 0.0)),
-                "close": float(values.get("4. close", 0.0)),
-            })
+            series.append(
+                {
+                    "date": datetime.strptime(date_str, "%Y-%m-%d"),
+                    "open": float(values.get("1. open", 0.0)),
+                    "high": float(values.get("2. high", 0.0)),
+                    "low": float(values.get("3. low", 0.0)),
+                    "close": float(values.get("4. close", 0.0)),
+                }
+            )
         # Sort ascending by date
         series.sort(key=lambda x: x["date"])
         return series
@@ -95,15 +100,15 @@ class AlphaVantageClient:
             return []
         series = []
         for date_str, values in data[series_key].items():
-            series.append({
-                "date": datetime.strptime(date_str, "%Y-%m-%d"),
-                "open": float(values.get("1. open", 0.0)),
-                "high": float(values.get("2. high", 0.0)),
-                "low": float(values.get("3. low", 0.0)),
-                "close": float(values.get("4. close", 0.0)),
-                "volume": float(values.get("6. volume", values.get("5. volume", 0.0))),
-            })
+            series.append(
+                {
+                    "date": datetime.strptime(date_str, "%Y-%m-%d"),
+                    "open": float(values.get("1. open", 0.0)),
+                    "high": float(values.get("2. high", 0.0)),
+                    "low": float(values.get("3. low", 0.0)),
+                    "close": float(values.get("4. close", 0.0)),
+                    "volume": float(values.get("6. volume", values.get("5. volume", 0.0))),
+                }
+            )
         series.sort(key=lambda x: x["date"])
         return series
-
-

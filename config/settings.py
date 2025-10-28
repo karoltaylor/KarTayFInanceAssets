@@ -1,4 +1,5 @@
 """Application settings and configuration."""
+
 from typing import List
 
 from pydantic import Field, field_validator
@@ -21,8 +22,7 @@ class Settings(BaseSettings):
 
     # CORS Configuration
     allowed_origins: str = Field(
-        default="http://localhost:3000,http://localhost:8000",
-        description="Comma-separated list of allowed origins"
+        default="http://localhost:3000,http://localhost:8000", description="Comma-separated list of allowed origins"
     )
 
     # Rate Limiting
@@ -50,22 +50,14 @@ class Settings(BaseSettings):
     def validate_origins(cls, v: str) -> str:
         """Validate that allowed_origins is not empty or wildcard in production."""
         if not v or v.strip() == "*":
-            raise ValueError(
-                "allowed_origins must be explicitly set and cannot be '*'"
-            )
+            raise ValueError("allowed_origins must be explicitly set and cannot be '*'")
         return v
 
     def get_allowed_origins(self) -> List[str]:
         """Get list of allowed origins."""
         return [origin.strip() for origin in self.allowed_origins.split(",")]
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-        extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore")
 
 
 settings = Settings()
-

@@ -39,15 +39,49 @@ env/
 # Testing
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
-*.html
 coverage.xml
+.tox/
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+nosetests.xml
+*.cover
 
 # Logs
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Security
+.secrets.baseline
+bandit-report.json
+trivy-results.sarif
+
+# Documentation
+site/
+docs/_build/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Project specific
+data/
+temp/
 

@@ -10,7 +10,7 @@ mongomock==4.2.0.post1
 
 # Code formatting
 black==24.10.0
-isort==5.13.2
+isort==7.0.0
 
 # Linting
 pylint==3.3.1

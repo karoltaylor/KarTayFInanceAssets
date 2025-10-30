@@ -1,16 +1,20 @@
 """Service for managing inflation rate data."""
+
 from datetime import datetime
-from typing import List, Dict
+from typing import Dict, List
+
 from pymongo.database import Database
-from .base_service import BaseDataService
+
 from src.database.models import InflationRate
 from src.providers.world_bank import WorldBankClient
+
+from .base_service import BaseDataService
 
 
 class InflationService(BaseDataService):
     """
     Service for managing inflation rate data.
-    
+
     Note: Inflation data is typically released monthly by government agencies.
     This service provides methods to manually add inflation data as it's not
     commonly available through free APIs in real-time.
@@ -29,37 +33,26 @@ class InflationService(BaseDataService):
         self.client = WorldBankClient()
         self.create_indexes([[("date", 1), ("currency", 1)]])
 
-    def add_inflation_rate(
-        self,
-        date: datetime,
-        currency: str,
-        rate: float,
-        source: str = "manual"
-    ) -> bool:
+    def add_inflation_rate(self, date: datetime, currency: str, rate: float, source: str = "manual") -> bool:
         """
         Add a single inflation rate record.
-        
+
         Args:
             date: Date of the inflation rate (typically first day of month)
             currency: Currency code (USD, PLN, EUR)
             rate: Inflation rate as percentage
             source: Data source
-            
+
         Returns:
             True if successfully added, False otherwise
         """
         try:
-            record = InflationRate(
-                date=date,
-                currency=currency,
-                rate=rate,
-                source=source
-            )
-            
+            record = InflationRate(date=date, currency=currency, rate=rate, source=source)
+
             self.collection.insert_one(record.model_dump())
             self.logger.info(f"Added inflation rate for {currency} on {date.date()}: {rate}%")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Error adding inflation rate: {str(e)}")
             return False
@@ -67,10 +60,10 @@ class InflationService(BaseDataService):
     def add_inflation_rates_bulk(self, rates: List[dict]) -> int:
         """
         Add multiple inflation rate records.
-        
+
         Args:
             rates: List of dictionaries with date, currency, rate, and optional source
-            
+
         Returns:
             Number of records inserted
         """
@@ -82,7 +75,7 @@ class InflationService(BaseDataService):
             except Exception as e:
                 self.logger.error(f"Error validating inflation rate: {str(e)}")
                 continue
-        
+
         return self.bulk_insert(records)
 
     def update_inflation_from_world_bank(self) -> dict:
@@ -119,10 +112,7 @@ class InflationService(BaseDataService):
                 if value is None:
                     continue
                 record = InflationRate(
-                    date=datetime(year, 1, 1),
-                    currency=currency,
-                    rate=float(value),
-                    source="worldbank"
+                    date=datetime(year, 1, 1), currency=currency, rate=float(value), source="worldbank"
                 )
                 records.append(record.model_dump())
 
@@ -136,45 +126,39 @@ class InflationService(BaseDataService):
     def get_latest_rate(self, currency: str) -> dict:
         """
         Get the latest inflation rate for a currency.
-        
+
         Args:
             currency: Currency code
-            
+
         Returns:
             Latest inflation rate record or None
         """
-        return self.collection.find_one(
-            {"currency": currency},
-            sort=[("date", -1)]
-        )
+        return self.collection.find_one({"currency": currency}, {"_id": 0}, sort=[("date", -1)])
 
     def get_rates_by_currency(
-        self,
-        currency: str,
-        start_date: datetime = None,
-        end_date: datetime = None
+        self, currency: str, start_date: datetime = None, end_date: datetime = None
     ) -> List[dict]:
         """
         Get inflation rates for a currency within a date range.
-        
+
         Args:
             currency: Currency code
             start_date: Optional start date
             end_date: Optional end date
-            
+
         Returns:
             List of inflation rate records
         """
         query = {"currency": currency}
-        
+
         if start_date or end_date:
             query["date"] = {}
             if start_date:
                 query["date"]["$gte"] = start_date
             if end_date:
                 query["date"]["$lte"] = end_date
-        
-        return list(self.collection.find(query).sort("date", 1))
+
+        return list(self.collection.find(query, {"_id": 0}).sort("date", 1))
 
     def seed_sample_data(self):
         """
@@ -193,10 +177,9 @@ class InflationService(BaseDataService):
             {"date": datetime(2024, 2, 1), "currency": "PLN", "rate": 4.6, "source": "sample"},
             {"date": datetime(2024, 3, 1), "currency": "PLN", "rate": 4.3, "source": "sample"},
         ]
-        
+
         try:
             return self.add_inflation_rates_bulk(sample_data)
         except Exception as e:
             self.logger.error(f"Error seeding sample data: {str(e)}")
             return 0
-

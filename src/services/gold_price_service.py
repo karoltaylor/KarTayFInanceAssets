@@ -1,10 +1,14 @@
 """Service for fetching and storing gold price data."""
+
 from datetime import datetime
 from typing import List
+
 from pymongo.database import Database
-from .base_service import BaseDataService
+
 from src.database.models import GoldPrice
 from src.providers.fred import FredClient
+
+from .base_service import BaseDataService
 
 
 class GoldPriceService(BaseDataService):
@@ -23,11 +27,11 @@ class GoldPriceService(BaseDataService):
     def fetch_gold_prices(self, start_date: datetime, end_date: datetime) -> List[dict]:
         """
         Fetch gold price data from FRED (London PM fix in USD).
-        
+
         Args:
             start_date: Start date for data
             end_date: End date for data
-            
+
         Returns:
             List of gold price records
         """
@@ -45,11 +49,7 @@ class GoldPriceService(BaseDataService):
             for item in series:
                 ts: datetime = item["date"]
                 price = item["close"]
-                record = GoldPrice(
-                    date=ts,
-                    price_usd=float(price),
-                    source="fred"
-                )
+                record = GoldPrice(date=ts, price_usd=float(price), source="fred")
                 records.append(record.model_dump())
 
             self.logger.info(f"Fetched {len(records)} gold price records")
@@ -62,7 +62,7 @@ class GoldPriceService(BaseDataService):
     def update_gold_prices(self) -> dict:
         """
         Update gold prices with latest data.
-        
+
         Returns:
             Dictionary with update statistics
         """
@@ -76,7 +76,7 @@ class GoldPriceService(BaseDataService):
 
         # Fetch and insert data
         records = self.fetch_gold_prices(start_date, end_date)
-        
+
         if records:
             try:
                 inserted = self.bulk_insert(records)
@@ -89,9 +89,8 @@ class GoldPriceService(BaseDataService):
     def get_latest_price(self) -> dict:
         """
         Get the latest gold price.
-        
+
         Returns:
             Latest gold price record or None
         """
         return self.collection.find_one(sort=[("date", -1)])
-

@@ -1,9 +1,12 @@
 """NBP (Narodowy Bank Polski) API provider for PLN exchange rates."""
+
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Dict
+from typing import Dict, List
+
 import requests
+
 from config.logging_config import get_logger
 
 
@@ -25,8 +28,10 @@ class NbpClient:
 
         Returns list of dicts with: date, mid
         """
-        url = f"{self.BASE_URL}/exchangerates/rates/A/{code}/{start.strftime('%Y-%m-%d')}/{end.strftime('%Y-%m-%d')}" \
-              + "/?format=json"
+        url = (
+            f"{self.BASE_URL}/exchangerates/rates/A/{code}/{start.strftime('%Y-%m-%d')}/{end.strftime('%Y-%m-%d')}"
+            + "/?format=json"
+        )
         try:
             resp = requests.get(url, timeout=30, headers={"Accept": "application/json"})
             resp.raise_for_status()
@@ -47,5 +52,3 @@ class NbpClient:
         except Exception as e:
             self.logger.error(f"NBP fetch failed for {code}: {str(e)}")
             return []
-
-

@@ -1,10 +1,14 @@
 """Service for fetching and storing stock/index price data."""
+
 from datetime import datetime
 from typing import List
+
 from pymongo.database import Database
-from .base_service import BaseDataService
+
 from src.database.models import StockPrice
 from src.providers.alpha_vantage import AlphaVantageClient
+
+from .base_service import BaseDataService
 
 
 class StockPriceService(BaseDataService):
@@ -19,25 +23,22 @@ class StockPriceService(BaseDataService):
         self.client = AlphaVantageClient()
         self.create_indexes([[("date", 1), ("symbol", 1)]])
 
-    def fetch_stock_prices(
-        self,
-        symbol: str,
-        start_date: datetime,
-        end_date: datetime
-    ) -> List[dict]:
+    def fetch_stock_prices(self, symbol: str, start_date: datetime, end_date: datetime) -> List[dict]:
         """
         Fetch stock/index price data from Yahoo Finance.
-        
+
         Args:
             symbol: Stock or index symbol
             start_date: Start date for data
             end_date: End date for data
-            
+
         Returns:
             List of stock price records
         """
         try:
-            self.logger.info(f"Fetching {symbol} prices from {start_date.date()} to {end_date.date()} via Alpha Vantage")
+            self.logger.info(
+                f"Fetching {symbol} prices from {start_date.date()} to {end_date.date()} via Alpha Vantage"
+            )
 
             # Normalize to SPY if user passes ^GSPC
             av_symbol = self.SPY_SYMBOL if symbol.upper() in {"^GSPC", "GSPC", "SPY"} else symbol.upper()
@@ -59,7 +60,7 @@ class StockPriceService(BaseDataService):
                     low_price=float(item["low"]) if item.get("low") is not None else None,
                     close_price=float(item["close"]),
                     volume=float(item["volume"]) if item.get("volume") is not None else None,
-                    source="alphavantage"
+                    source="alphavantage",
                 )
                 records.append(record.model_dump())
 
@@ -73,7 +74,7 @@ class StockPriceService(BaseDataService):
     def update_sp500(self) -> dict:
         """
         Update S&P 500 index data with latest prices.
-        
+
         Returns:
             Dictionary with update statistics
         """
@@ -87,7 +88,7 @@ class StockPriceService(BaseDataService):
 
         # Fetch and insert data
         records = self.fetch_stock_prices(self.SPY_SYMBOL, start_date, end_date)
-        
+
         if records:
             try:
                 inserted = self.bulk_insert(records)
@@ -100,15 +101,11 @@ class StockPriceService(BaseDataService):
     def get_latest_price(self, symbol: str) -> dict:
         """
         Get the latest price for a symbol.
-        
+
         Args:
             symbol: Stock or index symbol
-            
+
         Returns:
             Latest price record or None
         """
-        return self.collection.find_one(
-            {"symbol": symbol},
-            sort=[("date", -1)]
-        )
-
+        return self.collection.find_one({"symbol": symbol}, sort=[("date", -1)])

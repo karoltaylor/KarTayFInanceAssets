@@ -1,14 +1,12 @@
 """Scheduler for automated daily data updates."""
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from pymongo.database import Database
+
 from config import settings
 from config.logging_config import get_logger
-from src.services import (
-    ExchangeRateService,
-    GoldPriceService,
-    StockPriceService
-)
+from src.services import ExchangeRateService, GoldPriceService, StockPriceService
 
 
 class DataScheduler:
@@ -17,7 +15,7 @@ class DataScheduler:
     def __init__(self, db: Database):
         """
         Initialize the data scheduler.
-        
+
         Args:
             db: MongoDB database instance
         """
@@ -27,13 +25,13 @@ class DataScheduler:
         self.services = {
             "exchange_rates": ExchangeRateService(db),
             "gold_prices": GoldPriceService(db),
-            "stock_prices": StockPriceService(db)
+            "stock_prices": StockPriceService(db),
         }
 
     def update_all_data(self):
         """Update all financial data sources."""
         self.logger.info("=== Starting scheduled data update ===")
-        
+
         try:
             # Update exchange rates
             self.logger.info("Updating exchange rates...")
@@ -51,7 +49,7 @@ class DataScheduler:
             self.logger.info(f"S&P 500 update: {sp500_stats}")
 
             self.logger.info("=== Scheduled data update completed successfully ===")
-            
+
         except Exception as e:
             self.logger.error(f"Error during scheduled update: {str(e)}")
 
@@ -62,19 +60,16 @@ class DataScheduler:
             return
 
         # Schedule daily data update
-        trigger = CronTrigger(
-            hour=settings.daily_run_hour,
-            minute=settings.daily_run_minute
-        )
-        
+        trigger = CronTrigger(hour=settings.daily_run_hour, minute=settings.daily_run_minute)
+
         self.scheduler.add_job(
             self.update_all_data,
             trigger=trigger,
             id="daily_data_update",
             name="Daily financial data update",
-            replace_existing=True
+            replace_existing=True,
         )
-        
+
         self.scheduler.start()
         self.logger.info(
             f"Scheduler started. Daily updates at {settings.daily_run_hour:02d}:{settings.daily_run_minute:02d}"
@@ -90,4 +85,3 @@ class DataScheduler:
         """Manually trigger a data update immediately."""
         self.logger.info("Manual data update triggered")
         self.update_all_data()
-

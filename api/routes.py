@@ -1,15 +1,18 @@
 """API routes for the Finance Assets API."""
+
 from datetime import datetime
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query, Depends
-from config.logging_config import get_logger
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pymongo.database import Database
+
+from config.logging_config import get_logger
 from src.database import get_database
 from src.services import (
     ExchangeRateService,
-    InflationService,
     GoldPriceService,
-    StockPriceService
+    InflationService,
+    StockPriceService,
 )
 
 router = APIRouter()
@@ -25,11 +28,7 @@ def get_db():
 @router.get("/")
 async def root():
     """Root endpoint."""
-    return {
-        "name": "Finance Assets API",
-        "version": "1.0.0",
-        "description": "API for historical financial data"
-    }
+    return {"name": "Finance Assets API", "version": "1.0.0", "description": "API for historical financial data"}
 
 
 @router.get("/health")
@@ -37,14 +36,10 @@ async def health_check(db: Database = Depends(get_db)):
     """Health check endpoint."""
     try:
         # Test database connection
-        db.client.admin.command('ping')
-        return {
-            "status": "healthy",
-            "database": "connected",
-            "timestamp": datetime.utcnow().isoformat()
-        }
+        db.client.admin.command("ping")
+        return {"status": "healthy", "database": "connected", "timestamp": datetime.utcnow().isoformat()}
     except Exception as e:
-        raise HTTPException(status_code=503, detail=f"Database connection failed: {str(e)}")
+        raise HTTPException(status_code=503, detail=f"Database connection failed: {str(e)}") from e
 
 
 # Exchange Rate Endpoints
@@ -63,23 +58,23 @@ async def get_exchange_rate_history(
     start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
     limit: int = Query(100, ge=1, le=1000),
-    db: Database = Depends(get_db)
+    db: Database = Depends(get_db),
 ):
     """Get exchange rate history for a specific currency pair."""
     service = ExchangeRateService(db)
-    
-    query = {
-        "from_currency": from_currency.upper(),
-        "to_currency": to_currency.upper()
-    }
-    
+
+    query = {"from_currency": from_currency.upper(), "to_currency": to_currency.upper()}
+
     if start_date or end_date:
         query["date"] = {}
-        if start_date:
-            query["date"]["$gte"] = datetime.fromisoformat(start_date)
-        if end_date:
-            query["date"]["$lte"] = datetime.fromisoformat(end_date)
-    
+        try:
+            if start_date:
+                query["date"]["$gte"] = datetime.fromisoformat(start_date)
+            if end_date:
+                query["date"]["$lte"] = datetime.fromisoformat(end_date)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=f"Invalid date format: {str(e)}") from e
+
     rates = list(service.collection.find(query).sort("date", -1).limit(limit))
     return {"data": rates, "count": len(rates)}
 
@@ -98,10 +93,10 @@ async def get_latest_gold_price(db: Database = Depends(get_db)):
     """Get the latest gold price."""
     service = GoldPriceService(db)
     price = service.get_latest_price()
-    
+
     if not price:
         raise HTTPException(status_code=404, detail="No gold price data available")
-    
+
     return {"data": price}
 
 
@@ -110,19 +105,22 @@ async def get_gold_price_history(
     start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
     limit: int = Query(100, ge=1, le=1000),
-    db: Database = Depends(get_db)
+    db: Database = Depends(get_db),
 ):
     """Get gold price history."""
     service = GoldPriceService(db)
-    
+
     query = {}
     if start_date or end_date:
         query["date"] = {}
-        if start_date:
-            query["date"]["$gte"] = datetime.fromisoformat(start_date)
-        if end_date:
-            query["date"]["$lte"] = datetime.fromisoformat(end_date)
-    
+        try:
+            if start_date:
+                query["date"]["$gte"] = datetime.fromisoformat(start_date)
+            if end_date:
+                query["date"]["$lte"] = datetime.fromisoformat(end_date)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=f"Invalid date format: {str(e)}") from e
+
     prices = list(service.collection.find(query).sort("date", -1).limit(limit))
     return {"data": prices, "count": len(prices)}
 
@@ -137,17 +135,14 @@ async def update_gold_prices(db: Database = Depends(get_db)):
 
 # Stock Price Endpoints (S&P 500)
 @router.get("/stocks/{symbol}/latest")
-async def get_latest_stock_price(
-    symbol: str,
-    db: Database = Depends(get_db)
-):
+async def get_latest_stock_price(symbol: str, db: Database = Depends(get_db)):
     """Get the latest price for a stock/index."""
     service = StockPriceService(db)
     price = service.get_latest_price(symbol.upper())
-    
+
     if not price:
         raise HTTPException(status_code=404, detail=f"No data available for {symbol}")
-    
+
     return {"data": price}
 
 
@@ -157,19 +152,22 @@ async def get_stock_price_history(
     start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
     limit: int = Query(100, ge=1, le=1000),
-    db: Database = Depends(get_db)
+    db: Database = Depends(get_db),
 ):
     """Get price history for a stock/index."""
     service = StockPriceService(db)
-    
+
     query = {"symbol": symbol.upper()}
     if start_date or end_date:
         query["date"] = {}
-        if start_date:
-            query["date"]["$gte"] = datetime.fromisoformat(start_date)
-        if end_date:
-            query["date"]["$lte"] = datetime.fromisoformat(end_date)
-    
+        try:
+            if start_date:
+                query["date"]["$gte"] = datetime.fromisoformat(start_date)
+            if end_date:
+                query["date"]["$lte"] = datetime.fromisoformat(end_date)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=f"Invalid date format: {str(e)}") from e
+
     prices = list(service.collection.find(query).sort("date", -1).limit(limit))
     return {"data": prices, "count": len(prices)}
 
@@ -184,17 +182,14 @@ async def update_sp500_prices(db: Database = Depends(get_db)):
 
 # Inflation Rate Endpoints
 @router.get("/inflation/latest/{currency}")
-async def get_latest_inflation_rate(
-    currency: str,
-    db: Database = Depends(get_db)
-):
+async def get_latest_inflation_rate(currency: str, db: Database = Depends(get_db)):
     """Get the latest inflation rate for a currency."""
     service = InflationService(db)
     rate = service.get_latest_rate(currency.upper())
-    
+
     if not rate:
         raise HTTPException(status_code=404, detail=f"No inflation data available for {currency}")
-    
+
     return {"data": rate}
 
 
@@ -203,14 +198,17 @@ async def get_inflation_history(
     currency: str,
     start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
-    db: Database = Depends(get_db)
+    db: Database = Depends(get_db),
 ):
     """Get inflation rate history for a currency."""
     service = InflationService(db)
-    
-    start = datetime.fromisoformat(start_date) if start_date else None
-    end = datetime.fromisoformat(end_date) if end_date else None
-    
+
+    try:
+        start = datetime.fromisoformat(start_date) if start_date else None
+        end = datetime.fromisoformat(end_date) if end_date else None
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid date format: {str(e)}") from e
+
     rates = service.get_rates_by_currency(currency.upper(), start, end)
     return {"data": rates, "count": len(rates)}
 
@@ -245,5 +243,4 @@ async def update_all_data(db: Database = Depends(get_db)):
         return {"status": "success", "message": "Data update triggered"}
     except Exception as e:
         logger.exception(f"Manual data update failed: {str(e)}")
-        raise HTTPException(status_code=500, detail="Data update failed; see logs for details")
-
+        raise HTTPException(status_code=500, detail="Data update failed; see logs for details") from e

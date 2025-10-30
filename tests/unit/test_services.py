@@ -1,12 +1,10 @@
 """Unit tests for services."""
-import pytest
+
 from datetime import datetime, timedelta
-from src.services import (
-    ExchangeRateService,
-    InflationService,
-    GoldPriceService,
-    StockPriceService
-)
+
+import pytest
+
+from src.services import ExchangeRateService, GoldPriceService, InflationService, StockPriceService
 
 
 @pytest.mark.unit
@@ -22,7 +20,7 @@ class TestExchangeRateService:
         """Test get_start_date with no existing data."""
         service = ExchangeRateService(mock_db)
         start_date = service.get_start_date()
-        
+
         # Should return date from HISTORICAL_YEARS ago
         expected_date = datetime.now() - timedelta(days=365 * 3)
         assert start_date.date() == expected_date.date()
@@ -31,12 +29,9 @@ class TestExchangeRateService:
         """Test get_start_date with existing data."""
         service = ExchangeRateService(mock_db)
         service.collection.insert_one(sample_exchange_rate)
-        
-        start_date = service.get_start_date({
-            "from_currency": "USD",
-            "to_currency": "PLN"
-        })
-        
+
+        start_date = service.get_start_date({"from_currency": "USD", "to_currency": "PLN"})
+
         # Should return day after latest date
         expected_date = sample_exchange_rate["date"] + timedelta(days=1)
         assert start_date.date() == expected_date.date()
@@ -67,7 +62,7 @@ class TestGoldPriceService:
         """Test get_latest_price with data."""
         service = GoldPriceService(mock_db)
         service.collection.insert_one(sample_gold_price)
-        
+
         price = service.get_latest_price()
         assert price is not None
         assert price["price_usd"] == 1975.50
@@ -92,7 +87,7 @@ class TestStockPriceService:
         """Test get_latest_price with data."""
         service = StockPriceService(mock_db)
         service.collection.insert_one(sample_stock_price)
-        
+
         price = service.get_latest_price("^GSPC")
         assert price is not None
         assert price["close_price"] == 4510.00
@@ -110,11 +105,7 @@ class TestInflationService:
     def test_add_inflation_rate(self, mock_db):
         """Test adding a single inflation rate."""
         service = InflationService(mock_db)
-        result = service.add_inflation_rate(
-            date=datetime(2024, 10, 1),
-            currency="USD",
-            rate=3.2
-        )
+        result = service.add_inflation_rate(date=datetime(2024, 10, 1), currency="USD", rate=3.2)
         assert result is True
 
     def test_get_latest_rate_empty(self, mock_db):
@@ -127,8 +118,7 @@ class TestInflationService:
         """Test get_latest_rate with data."""
         service = InflationService(mock_db)
         service.collection.insert_one(sample_inflation_rate)
-        
+
         rate = service.get_latest_rate("USD")
         assert rate is not None
         assert rate["rate"] == 3.2
-

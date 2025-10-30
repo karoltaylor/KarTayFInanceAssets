@@ -1,10 +1,13 @@
 """FRED (Federal Reserve Economic Data) provider client."""
+
 from __future__ import annotations
 
-from datetime import datetime
-from typing import List, Dict
 import time
+from datetime import datetime
+from typing import Dict, List
+
 import requests
+
 from config import settings
 from config.logging_config import get_logger
 
@@ -74,5 +77,3 @@ class FredClient:
                 time.sleep(backoff)
                 backoff *= 2
         return []
-
-

@@ -9,7 +9,7 @@ httpx==0.27.2
 mongomock==4.2.0.post1
 
 # Code formatting
-black==24.10.0
+black==25.9.0
 isort==5.13.2
 
 # Linting

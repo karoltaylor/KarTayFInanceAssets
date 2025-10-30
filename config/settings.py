@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     api_port: int = 8000
     api_reload: bool = True
 
+    # HTTP/Security Configuration
+    enforce_https: bool = False
+    allowed_hosts: str = "*"
+    require_api_key: bool = False
+    api_key_header_name: str = "X-API-Key"
+    api_key_value: str = ""
     # CORS Configuration
     allowed_origins: str = Field(
         default="http://localhost:3000,http://localhost:8000", description="Comma-separated list of allowed origins"
@@ -56,6 +62,14 @@ class Settings(BaseSettings):
     def get_allowed_origins(self) -> List[str]:
         """Get list of allowed origins."""
         return [origin.strip() for origin in self.allowed_origins.split(",")]
+
+    def get_allowed_hosts(self) -> List[str]:
+        """Get list of allowed hosts for TrustedHostMiddleware.
+
+        Returns ["*"] to indicate disabled TrustedHostMiddleware when wildcard.
+        """
+        cleaned = [host.strip() for host in self.allowed_hosts.split(",") if host.strip()]
+        return cleaned if cleaned else ["*"]
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore")
 

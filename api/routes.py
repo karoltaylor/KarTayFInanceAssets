@@ -3,10 +3,11 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pymongo.database import Database
 
 from config.logging_config import get_logger
+from config.settings import settings
 from src.database import get_database
 from src.services import (
     ExchangeRateService,
@@ -15,7 +16,20 @@ from src.services import (
     StockPriceService,
 )
 
-router = APIRouter()
+def _verify_api_key(request: Request):
+    """Optional API key verification for all routes when enabled in settings.
+
+    If `settings.require_api_key` is True, the request must include the correct
+    API key in the header defined by `settings.api_key_header_name`.
+    """
+    if not settings.require_api_key:
+        return
+    provided = request.headers.get(settings.api_key_header_name)
+    if not provided or not settings.api_key_value or provided != settings.api_key_value:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or missing API key")
+
+
+router = APIRouter(dependencies=[Depends(_verify_api_key)])
 logger = get_logger(__name__)
 
 
